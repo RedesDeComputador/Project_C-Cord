@@ -1,50 +1,71 @@
-C-Cord: Sistema Cliente-Servidor em C
-Um sistema cliente-servidor simples e interativo implementado na linguagem C utilizando Sockets TCP/IP. Este projeto (Fase 1) implementa um servidor sequencial com um sistema básico de autenticação, onde os utilizadores podem registar-se, fazer login e comunicar com o servidor.
+C-Cord Server - Fase 2
 
-✨ Funcionalidades
-Comunicação via Sockets TCP: Conexão fiável entre cliente e servidor na porta 8080.
+Este repositório contém a segunda iteração do servidor de comunicações C-Cord. Construído sobre a arquitetura sequencial desenvolvida na Fase 1, esta versão expande as capacidades da rede introduzindo um sistema de mensagens assíncronas, um diretório público e mecanismos de moderação de contas através de hierarquia de privilégios.
 
-Sistema de Autenticação: Registo e Login de utilizadores.
+O QUE HÁ DE NOVO NA FASE 2?
 
-Persistência de Dados (Local): As credenciais dos utilizadores são guardadas num ficheiro de texto (users.txt).
+Nesta fase, o servidor deixou de ser apenas um sistema de autenticação e passou a suportar comunicação real e gestão de acessos:
 
-Proteção de Rotas: Comandos como GET_INFO e ECHO requerem que o utilizador tenha o login efetuado.
+Mensagens Offline (Assíncronas): Os utilizadores podem agora enviar mensagens para destinatários que não estão online. As mensagens ficam retidas no servidor até o destinatário solicitar a sua leitura (consumo destrutivo).
 
-Interface CLI Simples: O cliente possui um terminal interativo para enviar comandos e ler as respostas do servidor em tempo real.
+Diretório de Utilizadores: Adicionada a capacidade de consultar todos os membros registados na plataforma e os seus respetivos estados (Pendente, Aprovado, Admin).
 
-🛠️ Pré-requisitos
-Para compilar e executar este projeto, precisas de um ambiente do tipo Unix (Linux, macOS, ou WSL no Windows) com o compilador GCC instalado.
+Gestão de Contas (Perfil Admin): A segurança foi reforçada. Novos registos entram num estado de "Pendente" e necessitam da aprovação manual de um Administrador. Os Administradores ganharam também o poder de apagar contas permanentemente da base de dados.
 
-GCC (GNU Compiler Collection)
+Manipulação Segura de Ficheiros: Implementação de um sistema de reescrita com ficheiros temporários (temp.txt) para garantir a integridade da base de dados ao aprovar, apagar contas ou consumir mensagens.
 
-🚀 Como Compilar e Executar
-1. Compilação
-Abre o teu terminal na pasta onde tens os ficheiros de código e corre os seguintes comandos para compilar o servidor e o cliente:
-# Compilar o servidor
+ARQUITETURA E ARMAZENAMENTO
+
+Rede: Sockets TCP/IP em C (Modelo Sequencial / Bloqueante).
+
+Base de Dados Principal: Ficheiro de texto "users.txt" formatado como:   .
+
+Caixa de Correio: Ficheiro de texto "messages.txt" formatado como:   .
+
+COMO COMPILAR E EXECUTAR
+
+Certifica-te de que tens os ficheiros do servidor e do cliente separados e o compilador GCC instalado.
+
+Compilar os ficheiros:
 gcc server.c -o server
-
-# Compilar o cliente
 gcc client.c -o client
 
-2. Execução
-O servidor tem de estar a correr antes do cliente se conseguir conectar.
+Iniciar o Servidor:
+Executa o servidor no teu terminal principal. Ele iniciará na porta 8080.
+./server
 
-No Terminal 1 (Servidor):./server
+Iniciar a Sessão do Cliente:
+Abre um novo terminal e executa o cliente. (Lembrando que o servidor opera de forma sequencial, logo atende um cliente de cada vez).
+./client
 
-(Deverás ver a mensagem "Servidor C-Cord (Fase 1) a correr na porta 8080...")
+GUIA DE COMANDOS (Fase 2)
 
-No Terminal 2 (Cliente):./client
+Nível 0: Visitante (Sem Login)
 
-📜 Comandos DisponíveisPodes interagir com o servidor usando os seguintes comandos no terminal do cliente:
-ComandoDescriçãoExemplo de Uso
-REGISTER Regista um novo utilizador na base de dados (users.txt).
-REGISTER joao password123LOGINAutentica um utilizador existente.LOGIN joao password123GET_INFORetorna informações sobre o servidor (Requer Login).GET_INFOECHOO servidor devolve a mensagem enviada (Requer Login).ECHO Olá Servidor!QUITEncerra a ligação com o servidor e fecha o cliente.QUIT
+REGISTER   : Regista uma nova conta (fica pendente).
 
-Arquitetura e Limitações (Fase 1)
-Sendo esta a primeira iteração (Fase 1) do projeto, existem algumas características técnicas a ter em conta:
+LOGIN   : Autentica no sistema. Requer aprovação prévia.
 
-Servidor Sequencial (Bloqueante): Atualmente, o servidor atende um cliente de cada vez. O ciclo principal usa um accept() bloqueante e entra num loop dedicado a esse cliente até ele fazer QUIT ou desconectar-se.
+QUIT : Encerra a ligação com o servidor.
 
-Segurança de Palavras-passe: As passwords são guardadas em plain-text (texto limpo) no ficheiro users.txt. Numa aplicação real, estas devem ser sempre encriptadas (ex: usando hashes SHA-256).
+Nível 1: Utilizador Normal
 
-Limites de Buffer: As mensagens estão limitadas a 1024 bytes (definido em BUFFER_SIZE).
+LIST_ALL : Consulta a lista de todos os utilizadores registados.
+
+SEND_MSG  <mensagem...> : Envia uma mensagem para a caixa de correio de outro membro.
+
+CHECK_INBOX : Verifica, lê e apaga as mensagens destinadas a ti no servidor.
+
+GET_INFO : Retorna o estado e versão do servidor.
+
+ECHO  : Teste de latência/eco com o servidor.
+
+QUIT : Termina a sessão e liberta o servidor para o próximo cliente.
+
+Nível 2: Administrador
+
+Possui acesso a todos os comandos do Utilizador Normal.
+
+APPROVE_USER  : Muda o estado de um utilizador de "Pendente" (0) para "Aprovado" (1).
+
+DELETE_USER  : Apaga permanentemente o registo de um utilizador do servidor.
