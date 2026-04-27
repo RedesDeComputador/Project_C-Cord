@@ -12,13 +12,13 @@ void print_menu(int role)
 {
     printf("\n--- COMANDOS DISPONIVEIS ---\n");
     if (role == 0)
-    { 
+    {
         printf(" - REGISTER <user> <pass>\n");
         printf(" - LOGIN <user> <pass>\n");
         printf(" - QUIT\n");
     }
     else if (role == 1)
-    { 
+    {
         printf(" - GET_INFO\n");
         printf(" - ECHO <mensagem>\n");
         printf(" - SEND_MSG <destinatario> <mensagem...>\n");
@@ -27,12 +27,13 @@ void print_menu(int role)
         printf(" - QUIT\n");
     }
     else if (role == 2)
-    { 
+    {
         printf(" - GET_INFO\n");
         printf(" - ECHO <mensagem>\n");
         printf(" - LIST_ALL\n");
         printf(" - APPROVE_USER <user>\n");
         printf(" - DELETE_USER <user>\n");
+        printf(" - STATUS\n");
         printf(" - QUIT\n");
     }
     printf("----------------------------\n");
