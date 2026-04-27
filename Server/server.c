@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <time.h>
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
@@ -16,7 +17,7 @@ void register_user(char *username, char *password, char *response)
     {
         char file_user[256], file_pass[256];
         int status;
-        
+
         while (fscanf(file, "%s %s %d", file_user, file_pass, &status) != EOF)
         {
             if (strcmp(username, file_user) == 0)
@@ -35,7 +36,7 @@ void register_user(char *username, char *password, char *response)
         strcpy(response, "ERRO: Nao foi possivel abrir a base de dados.\n");
         return;
     }
-    
+
     fprintf(file, "%s %s 0\n", username, password);
     fclose(file);
     strcpy(response, "OK: Utilizador registado com sucesso. A aguardar aprovacao do Administrador.\n");
@@ -57,14 +58,13 @@ int login_user(char *username, char *password)
             if (status == 0)
                 return -1;
             if (status == 2)
-                return 2; 
-            return 1;     
+                return 2;
+            return 1;
         }
     }
     fclose(file);
-    return 0; 
+    return 0;
 }
-
 
 void delete_user(char *target_user, char *response)
 {
@@ -89,7 +89,7 @@ void delete_user(char *target_user, char *response)
     {
         if (strcmp(target_user, file_user) == 0)
         {
-            found = 1; 
+            found = 1;
         }
         else
         {
@@ -105,7 +105,7 @@ void delete_user(char *target_user, char *response)
 
     if (found)
     {
-        strcpy(response, "OK: Utilizador apagado com sucesso.\n"); 
+        strcpy(response, "OK: Utilizador apagado com sucesso.\n");
     }
     else
     {
@@ -137,7 +137,7 @@ void approve_user(char *target_user, char *response)
         if (strcmp(target_user, file_user) == 0)
         {
             found = 1;
-            fprintf(temp, "%s %s 1\n", file_user, file_pass); 
+            fprintf(temp, "%s %s 1\n", file_user, file_pass);
         }
         else
         {
@@ -212,7 +212,7 @@ void send_message(char *sender, char *receiver, char *msg, char *response)
         strcpy(response, "ERRO: Nao foi possivel aceder a caixa de mensagens.\n");
         return;
     }
-    
+
     fprintf(file, "%s %s %s\n", receiver, sender, msg);
     fclose(file);
     strcpy(response, "OK: Mensagem armazenada no servidor para quando o utilizador a solicitar.\n");
@@ -246,7 +246,7 @@ void check_inbox(char *current_user, char *response)
             if (strcmp(current_user, receiver) == 0)
             {
                 found = 1;
-                char inbox_line[800]; 
+                char inbox_line[800];
                 snprintf(inbox_line, sizeof(inbox_line), "De %s: %s\n", sender, msg);
                 if (strlen(response) + strlen(inbox_line) < BUFFER_SIZE - 10)
                 {
@@ -255,7 +255,7 @@ void check_inbox(char *current_user, char *response)
             }
             else
             {
-                fprintf(temp, "%s", line); 
+                fprintf(temp, "%s", line);
             }
         }
     }
@@ -283,6 +283,9 @@ int main()
     char buffer[BUFFER_SIZE] = {0};
     char response[BUFFER_SIZE] = {0};
 
+    int total_requests = 0;
+    time_t start_time = time(NULL);
+
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
         perror("Falha ao criar o socket");
@@ -307,7 +310,6 @@ int main()
 
     printf("Servidor C-Cord (Fase 1) a correr na porta %d...\n", PORT);
 
-
     while (1)
     {
         if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0)
@@ -318,8 +320,8 @@ int main()
 
         printf("Novo cliente conectado.\n");
 
-        int user_role = 0;            // 0 = Nao logado por aprovar, 1 = Normal, 2 = Admin
-        char current_user[256] = {0}; 
+        int user_role = 0; // 0 = Nao logado por aprovar, 1 = Normal, 2 = Admin
+        char current_user[256] = {0};
 
         while (1)
         {
@@ -337,6 +339,8 @@ int main()
             buffer[strcspn(buffer, "\r\n")] = 0;
             printf("[LOG] Recebido do cliente: %s\n", buffer);
 
+            total_requests++;
+
             char command[256], arg1[256], arg2[256];
             int parsed = sscanf(buffer, "%s %s %s", command, arg1, arg2);
 
@@ -346,7 +350,7 @@ int main()
             }
             else if (strcmp(command, "LOGIN") == 0 && parsed >= 3)
             {
-                if (user_role > 0) 
+                if (user_role > 0)
                 {
                     strcpy(response, "ERRO: Ja tens uma sessao iniciada. Usa o comando QUIT para sair primeiro.\n");
                 }
@@ -379,14 +383,14 @@ int main()
             {
                 if (user_role > 0)
                 {
-                    char *msg_ptr = strchr(buffer, ' '); 
+                    char *msg_ptr = strchr(buffer, ' ');
                     if (msg_ptr)
                     {
                         msg_ptr++;
-                        msg_ptr = strchr(msg_ptr, ' '); 
+                        msg_ptr = strchr(msg_ptr, ' ');
                         if (msg_ptr)
                         {
-                            msg_ptr++; 
+                            msg_ptr++;
                             send_message(current_user, arg1, msg_ptr, response);
                         }
                         else
@@ -416,7 +420,7 @@ int main()
                 if (user_role > 0)
                 {
                     strcpy(response, "INFO: C-Cord Server v1.0 | Uptime: 100s | Modo: Sequencial\n");
-                        }
+                }
                 else
                 {
                     strcpy(response, "ERRO: Precisas de fazer LOGIN primeiro.\n");
@@ -458,7 +462,7 @@ int main()
             else if (strcmp(command, "LIST_ALL") == 0)
             {
                 if (user_role > 0)
-                { 
+                {
                     list_users(response);
                 }
                 else
@@ -470,7 +474,12 @@ int main()
             {
                 if (user_role == 2)
                 {
-                    strcpy(response, "STATUS: Servidor ONLINE. Carga atual: BAIXA (Modo Sequencial).\n");
+                    time_t current_time = time(NULL);
+                    int uptime = (int)difftime(current_time, start_time);
+
+                    snprintf(response, BUFFER_SIZE,
+                             "STATUS: Servidor ONLINE\n- Uptime: %d segundos\n- Pedidos Processados: %d\n- Clientes Simultaneos: 1 (Modo Sequencial)\n",
+                             uptime, total_requests);
                 }
                 else
                 {
@@ -481,7 +490,7 @@ int main()
             {
                 strcpy(response, "A fechar ligacao. Adeus!\n");
                 send(new_socket, response, strlen(response), 0);
-                close(new_socket); 
+                close(new_socket);
                 break;
             }
             else
