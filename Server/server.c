@@ -16,7 +16,7 @@ void register_user(char *username, char *password, char *response)
     {
         char file_user[256], file_pass[256];
         int status;
-        // Atualizado para ler os 3 campos
+        
         while (fscanf(file, "%s %s %d", file_user, file_pass, &status) != EOF)
         {
             if (strcmp(username, file_user) == 0)
@@ -35,13 +35,12 @@ void register_user(char *username, char *password, char *response)
         strcpy(response, "ERRO: Nao foi possivel abrir a base de dados.\n");
         return;
     }
-    // Grava o novo utilizador com status 0 (Pendente)
+    
     fprintf(file, "%s %s 0\n", username, password);
     fclose(file);
     strcpy(response, "OK: Utilizador registado com sucesso. A aguardar aprovacao do Administrador.\n");
 }
 
-// Devolve: 0 (Falha), -1 (Pendente), 1 (Utilizador Normal), 2 (Administrador)
 int login_user(char *username, char *password)
 {
     FILE *file = fopen(DB_FILE, "r");
@@ -56,17 +55,17 @@ int login_user(char *username, char *password)
         {
             fclose(file);
             if (status == 0)
-                return -1; // Conta existe, mas está pendente
+                return -1;
             if (status == 2)
-                return 2; // Login de Administrador
-            return 1;     // Login de Utilizador normal
+                return 2; 
+            return 1;     
         }
     }
     fclose(file);
-    return 0; // Credenciais erradas
+    return 0; 
 }
 
-// Função para o F6: Apagar um utilizador
+
 void delete_user(char *target_user, char *response)
 {
     FILE *file = fopen(DB_FILE, "r");
@@ -86,12 +85,11 @@ void delete_user(char *target_user, char *response)
     int status;
     int found = 0;
 
-    // Copia todos os utilizadores para o ficheiro temporário, exceto o alvo
     while (fscanf(file, "%s %s %d", file_user, file_pass, &status) != EOF)
     {
         if (strcmp(target_user, file_user) == 0)
         {
-            found = 1; // Encontrou e vai ignorar (não escreve no temp)
+            found = 1; 
         }
         else
         {
@@ -102,13 +100,12 @@ void delete_user(char *target_user, char *response)
     fclose(file);
     fclose(temp);
 
-    // Substitui o ficheiro antigo pelo novo
     remove(DB_FILE);
     rename("temp.txt", DB_FILE);
 
     if (found)
     {
-        strcpy(response, "OK: Utilizador apagado com sucesso.\n"); // Envia confirmacao
+        strcpy(response, "OK: Utilizador apagado com sucesso.\n"); 
     }
     else
     {
@@ -116,7 +113,6 @@ void delete_user(char *target_user, char *response)
     }
 }
 
-// Função para o F5: Aprovar um novo utilizador
 void approve_user(char *target_user, char *response)
 {
     FILE *file = fopen(DB_FILE, "r");
@@ -141,7 +137,7 @@ void approve_user(char *target_user, char *response)
         if (strcmp(target_user, file_user) == 0)
         {
             found = 1;
-            fprintf(temp, "%s %s 1\n", file_user, file_pass); // Muda o status de 0 para 1
+            fprintf(temp, "%s %s 1\n", file_user, file_pass); 
         }
         else
         {
@@ -181,7 +177,6 @@ void list_users(char *response)
 
     while (fscanf(file, "%s %s %d", file_user, file_pass, &status) != EOF)
     {
-        // Concatenar cada utilizador à resposta (com cuidado para não exceder o BUFFER_SIZE)
         char line[300];
         if (status == 2)
         {
@@ -209,7 +204,6 @@ void list_users(char *response)
     fclose(file);
 }
 
-// Função para enviar e armazenar a mensagem (F4)
 void send_message(char *sender, char *receiver, char *msg, char *response)
 {
     FILE *file = fopen("messages.txt", "a");
@@ -218,13 +212,12 @@ void send_message(char *sender, char *receiver, char *msg, char *response)
         strcpy(response, "ERRO: Nao foi possivel aceder a caixa de mensagens.\n");
         return;
     }
-    // Grava no formato: Destinatario Remetente Mensagem
+    
     fprintf(file, "%s %s %s\n", receiver, sender, msg);
     fclose(file);
     strcpy(response, "OK: Mensagem armazenada no servidor para quando o utilizador a solicitar.\n");
 }
 
-// Função para ler as mensagens e retirá-las da caixa de entrada (F4)
 void check_inbox(char *current_user, char *response)
 {
     FILE *file = fopen("messages.txt", "r");
@@ -246,7 +239,6 @@ void check_inbox(char *current_user, char *response)
 
     strcpy(response, "--- CAIXA DE ENTRADA ---\n");
 
-    // Lemos linha a linha para capturar a mensagem inteira com espaços
     while (fgets(line, sizeof(line), file))
     {
         if (sscanf(line, "%s %s %[^\n]", receiver, sender, msg) == 3)
@@ -254,19 +246,16 @@ void check_inbox(char *current_user, char *response)
             if (strcmp(current_user, receiver) == 0)
             {
                 found = 1;
-                char inbox_line[800]; // Aumentado para 800 para evitar truncamento
+                char inbox_line[800]; 
                 snprintf(inbox_line, sizeof(inbox_line), "De %s: %s\n", sender, msg);
-
-                // Evitar overflow do buffer de resposta
                 if (strlen(response) + strlen(inbox_line) < BUFFER_SIZE - 10)
                 {
                     strcat(response, inbox_line);
                 }
-                // Como é para este utilizador, NÃO gravamos no ficheiro temporário (mensagem consumida)
             }
             else
             {
-                fprintf(temp, "%s", line); // Mensagem para outro utilizador, mantemos no ficheiro
+                fprintf(temp, "%s", line); 
             }
         }
     }
@@ -318,7 +307,7 @@ int main()
 
     printf("Servidor C-Cord (Fase 1) a correr na porta %d...\n", PORT);
 
-    // 4. Ciclo principal bloqueante (um cliente de cada vez)
+
     while (1)
     {
         if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0)
@@ -329,8 +318,8 @@ int main()
 
         printf("Novo cliente conectado.\n");
 
-        int user_role = 0;            // 0 = Nao logado, 1 = Normal, 2 = Admin
-        char current_user[256] = {0}; // NOVO: Para guardar quem tem a sessão iniciada
+        int user_role = 0;            // 0 = Nao logado por aprovar, 1 = Normal, 2 = Admin
+        char current_user[256] = {0}; 
 
         while (1)
         {
@@ -357,41 +346,47 @@ int main()
             }
             else if (strcmp(command, "LOGIN") == 0 && parsed >= 3)
             {
-                int login_status = login_user(arg1, arg2);
-                if (login_status == 1)
+                if (user_role > 0) 
                 {
-                    user_role = 1;
-                    strcpy(current_user, arg1); // Guarda o nome do utilizador
-                    strcpy(response, "OK: Login efetuado com sucesso.\n");
-                }
-                else if (login_status == 2)
-                {
-                    user_role = 2;
-                    strcpy(current_user, arg1); // Guarda o nome do administrador
-                    strcpy(response, "OK: Bem-vindo Administrador!\n");
-                }
-                else if (login_status == -1)
-                {
-                    strcpy(response, "ERRO: A tua conta precisa de ser aprovada por um administrador.\n");
+                    strcpy(response, "ERRO: Ja tens uma sessao iniciada. Usa o comando QUIT para sair primeiro.\n");
                 }
                 else
                 {
-                    strcpy(response, "ERRO: Credenciais invalidas.\n");
+                    int login_status = login_user(arg1, arg2);
+                    if (login_status == 1)
+                    {
+                        user_role = 1;
+                        strcpy(current_user, arg1);
+                        strcpy(response, "OK: Login efetuado com sucesso.\n");
+                    }
+                    else if (login_status == 2)
+                    {
+                        user_role = 2;
+                        strcpy(current_user, arg1);
+                        strcpy(response, "OK: Bem-vindo Administrador!\n");
+                    }
+                    else if (login_status == -1)
+                    {
+                        strcpy(response, "ERRO: A tua conta precisa de ser aprovada por um administrador.\n");
+                    }
+                    else
+                    {
+                        strcpy(response, "ERRO: Credenciais invalidas.\n");
+                    }
                 }
             }
             else if (strcmp(command, "SEND_MSG") == 0 && parsed >= 3)
             {
                 if (user_role > 0)
                 {
-                    // Magia com ponteiros para extrair toda a frase após o username
-                    char *msg_ptr = strchr(buffer, ' '); // primeiro espaço
+                    char *msg_ptr = strchr(buffer, ' '); 
                     if (msg_ptr)
                     {
                         msg_ptr++;
-                        msg_ptr = strchr(msg_ptr, ' '); // segundo espaço (antes da mensagem)
+                        msg_ptr = strchr(msg_ptr, ' '); 
                         if (msg_ptr)
                         {
-                            msg_ptr++; // avança o espaço, msg_ptr agora aponta para a mensagem inteira
+                            msg_ptr++; 
                             send_message(current_user, arg1, msg_ptr, response);
                         }
                         else
@@ -486,7 +481,7 @@ int main()
             {
                 strcpy(response, "A fechar ligacao. Adeus!\n");
                 send(new_socket, response, strlen(response), 0);
-                close(new_socket); // Garante que a socket é fechada
+                close(new_socket); 
                 break;
             }
             else
